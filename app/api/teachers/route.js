@@ -1,43 +1,49 @@
 import { connectToDB } from "@/libs/mongoDB";
+import Teacher from "../../../libs/models/Teacher";
+import bcrypt from "bcryptjs";
 
-import Teacher from '../../../libs/models/Teacher';
-import bcrypt from 'bcryptjs';
+export async function GET(request) {
+  await connectToDB();
 
-export default async function handler(req, res) {
-    const { method } = req;
+  try {
+    const teachers = await Teacher.find({});
+    return new Response(JSON.stringify({ success: true, data: teachers }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ success: false }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
 
-    await connectToDB();
+export async function POST(request) {
+  await connectToDB();
 
-    switch (method) {
-        case 'GET':
-            try {
-                const teachers = await Teacher.find({});
-                res.status(200).json({ success: true, data: teachers });
-            } catch (error) {
-                res.status(400).json({ success: false });
-            }
-            break;
-        case 'POST':
-            try {
-                const { name, email, password, subjects, assignedClasses, contactInfo } = req.body;
-                const hashedPassword = await bcrypt.hash(password, 10);
+  try {
+    const { name, email, password, subjects, assignedClasses, contactInfo } =
+      await request.json();
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-                const teacher = await Teacher.create({
-                    name,
-                    email,
-                    password: hashedPassword,
-                    subjects,
-                    assignedClasses,
-                    contactInfo,
-                });
+    const teacher = await Teacher.create({
+      name,
+      email,
+      password: hashedPassword,
+      subjects,
+      assignedClasses,
+      contactInfo,
+    });
 
-                res.status(201).json({ success: true, data: teacher });
-            } catch (error) {
-                res.status(400).json({ success: false });
-            }
-            break;
-        default:
-            res.status(400).json({ success: false });
-            break;
-    }
+    return new Response(JSON.stringify({ success: true, data: teacher }), {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ success: false }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 }
